@@ -36,18 +36,19 @@ float distance(const sf::Vector2f& vecA, sf::Vector2f& vectB)
 }
 
 struct Map {
-    std::vector<int> map;
+    int map[MAP_SIZE * MAP_SIZE];
 
     Map()
     {
         std::ifstream inFile("map.txt");
         std::string line;
 
-        map.reserve(MAP_SIZE * MAP_SIZE);
+        int i = 0;
         while (std::getline(inFile, line)) {
             for (auto c : line) {
                 std::cout << c;
-                map.push_back(c - '0');
+                map[i] = c - '0';
+                i++;
             }
         }
     }
@@ -56,14 +57,20 @@ struct Map {
     {
         if (x < 0 || x > MAP_SIZE || y < 0 || y > MAP_SIZE)
             return 0;
-        return map[(y * MAP_SIZE + x)];
+
+        int mapIndex = y * MAP_SIZE + x;
+
+        return map[mapIndex];
     }
 
     void setTile(int x, int y, int tile)
     {
         if (x < 0 || x > MAP_SIZE || y < 0 || y > MAP_SIZE)
             return;
-        map[(y * MAP_SIZE + x)] = tile;
+
+        int mapIndex = y * MAP_SIZE + x;
+
+        map[mapIndex] = tile;
     }
 };
 
@@ -138,6 +145,22 @@ int main()
     Map map;
     Player player;
 
+    sf::Font font;
+    sf::RectangleShape crosshair;
+    crosshair.setPosition(window.getSize().x / 2, window.getSize().y / 2);
+    crosshair.setSize({ 10, 10 });
+    crosshair.setFillColor(sf::Color::Black);
+
+    window.setMouseCursorGrabbed(true);
+
+    if (!font.loadFromFile("Roboto-Medium.ttf"))
+    {
+        std::cerr << ".Error while loading font" << std::endl;
+        return -1;
+    }
+
+    
+
     sf::RectangleShape minimapTile;
     minimapTile.setSize({ MINIMAP_TILE_SIZE, MINIMAP_TILE_SIZE });
     minimapTile.setFillColor(sf::Color::White);
@@ -173,6 +196,11 @@ int main()
                 break;
             }
         }
+        if (keyboard.isKeyDown(sf::Keyboard::Key::Escape))
+        {
+            window.setMouseCursorGrabbed(false);
+        }
+
         // Input
         player.doInput(keyboard);
 
@@ -329,9 +357,23 @@ int main()
              player.y / MINIMAP_SCALE + player.dy * 25 },
             sf::Color::Yellow);
 
+        // Render some debug text
+        sf::Text fpsText;
+        sf::Text posText;
+
+        posText.setFont(font);
+        posText.setString("X: " + std::to_string(player.x) + " Z: " + std::to_string(player.y));
+        posText.setFillColor(sf::Color::Red);
+        posText.setCharacterSize(30);
+        posText.setPosition(window.getSize().x / 1.5, 0);
+        window.draw(posText);
+
         minimapTexture.display();
         minimapSprite.setTexture(&minimapTexture.getTexture());
         window.draw(minimapSprite);
+        window.draw(crosshair);
+
+
 
         window.display();
     }
